@@ -82,11 +82,23 @@ export default function BarkadaBill() {
   }
 
   function addPerson() {
-    const n = newPerson.trim();
-    if (!n || people.includes(n)) return;
-    setPeople([...people, n]);
-    setNewPerson("");
-  } 
+  const names = newPerson
+    .split(",")                       // split on commas
+    .map((n) => n.trim())             // trim spaces around each
+    .filter((n) => n.length > 0);     // drop empties (e.g. trailing comma)
+
+  if (names.length === 0) return;
+
+  setPeople((prev) => {
+    const next = [...prev];
+    for (const name of names) {
+      if (!next.includes(name)) next.push(name); // skip duplicates
+    }
+    return next;
+  });
+
+  setNewPerson("");
+}
 
   function removePerson(name: string) {
     setPeople(people.filter((p) => p !== name));
@@ -180,7 +192,7 @@ export default function BarkadaBill() {
             value={newPerson}
             onChange={(e) => setNewPerson(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addPerson()}
-            placeholder="Add a name"
+            placeholder="Add names, separated by commas"
             style={input}
           />
           <button onClick={addPerson} style={btn}>Add</button>
