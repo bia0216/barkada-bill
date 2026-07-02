@@ -147,15 +147,27 @@ export default function BarkadaBill() {
 
     const owed = round2(lineItems.reduce((s, li) => s + li.amount, 0));
     const paidTotal = round2(pays.reduce((s, pm) => s + pm.amount, 0));
-    if (Math.abs(owed - paidTotal) > 0.01) {
+
+    // Underpaid is a real problem — not enough to cover the bill.
+    if (paidTotal < owed - 0.01) {
       return setFormError(
-        `Owed total (${peso(owed)}) doesn't match paid total (${peso(paidTotal)}). Fix the amounts.`
+        `Not enough paid. Bill is ${peso(owed)} but only ${peso(paidTotal)} was put in.`
       );
+    }
+
+    // Overpaid is fine (change came back). Scale payments down to the real bill
+    // total so the books balance — each payer's share of what was actually spent.
+    let finalPays = pays;
+    if (paidTotal > owed + 0.01) {
+      finalPays = pays.map((pm) => ({
+        person: pm.person,
+        amount: round2((pm.amount / paidTotal) * owed),
+      }));
     }
 
     setExpenses([
       ...expenses,
-      { id: crypto.randomUUID(), name: expName.trim(), mode, lineItems, payments: pays },
+      { id: crypto.randomUUID(), name: expName.trim(), mode, lineItems, payments:  finalPays },
     ]);
   }
 
